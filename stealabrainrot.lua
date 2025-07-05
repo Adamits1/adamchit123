@@ -70,7 +70,7 @@ CombatSection:AddToggle({
     enabled = true,
     text = "Adam Poo",
     flag = "adam_poo",
-    tooltip = "Show rainbow 123 in screen corners",
+    tooltip = "Show rainbow adam poo in screen corners",
     callback = function(v)
         showRainbow123 = v
     end
@@ -87,7 +87,7 @@ CombatSection:AddButton({
         for i = 1, 50 do
             task.delay(i * 0.05, function()
                 local dot = Drawing.new("Text")
-                dot.Text = "●"
+                dot.Text = "adams on top klavs kaka"
                 dot.Size = 20
                 dot.Color = Color3.fromHSV(math.random(), 1, 1)
                 dot.Position = Vector2.new(math.random(0, 800), math.random(0, 600))
@@ -376,24 +376,47 @@ MovementSection:AddSlider({
     end
 })
 
--- Speed Boost
+local originalWalkSpeed = nil
 local speedBoostEnabled = false
-local originalWalkSpeed = 16
 
 local function applySpeedBoost()
     local char = LocalPlayer.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
         if hum then
+            if not originalWalkSpeed then
+                originalWalkSpeed = hum.WalkSpeed -- Save once
+            end
             if speedBoostEnabled then
-                originalWalkSpeed = hum.WalkSpeed
-                hum.WalkSpeed = 50
+                hum.WalkSpeed = 50 -- Boosted speed
             else
-                hum.WalkSpeed = originalWalkSpeed
+                hum.WalkSpeed = originalWalkSpeed or 16
             end
         end
     end
 end
+
+-- Continuously enforce speed while enabled
+RunService.Heartbeat:Connect(function()
+    if speedBoostEnabled then
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum and hum.WalkSpeed ~= 50 then
+                hum.WalkSpeed = 50
+            end
+        end
+    else
+        -- Optionally reset speed if toggled off while character exists
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum and originalWalkSpeed and hum.WalkSpeed ~= originalWalkSpeed then
+                hum.WalkSpeed = originalWalkSpeed
+            end
+        end
+    end
+end)
 
 MovementSection:AddToggle({
     enabled = true,
@@ -406,12 +429,15 @@ MovementSection:AddToggle({
     end
 })
 
--- Apply speed boost on character spawn
 Players.LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(1) -- wait for Humanoid to load
+    char:WaitForChild("Humanoid")
+    originalWalkSpeed = nil
     applySpeedBoost()
 end)
 
--- Also in case the character already loaded
-task.delay(1, applySpeedBoost)
+if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+    originalWalkSpeed = nil
+    applySpeedBoost()
+end
+
 
