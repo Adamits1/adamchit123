@@ -27,6 +27,7 @@ local UtilitySection = Tab3:AddSection("Utility", 1)
 local VisualsSection = Tab4:AddSection("Visuals", 1)
 
 
+
 -- Rainbow "123" texts setup
 local showRainbow123 = false
 local Drawing = Drawing
@@ -454,8 +455,10 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
-UtilitySection:AddToggle({
-    enabled = false,
+
+
+MovementSection:AddToggle({
+    enabled = true,
     text = "Infinite Jump",
     flag = "inf_jump",
     tooltip = "Jump infinitely",
@@ -468,7 +471,7 @@ UtilitySection:AddToggle({
 local antiStunEnabled = false
 
 UtilitySection:AddToggle({
-    enabled = false,
+    enabled = true,
     text = "Anti Stun",
     flag = "anti_stun",
     tooltip = "Removes stun effects (like from knockdowns)",
@@ -617,4 +620,552 @@ VisualsSection:AddToggle({
     callback = function(v) nameColor = v end
 })
 
+
+
+local FunnyTab = Window:AddTab("  Funny  ")
+local FunnySection = FunnyTab:AddSection("Funny Features", 1)
+
+-- 1. Penis feature: Draw silly text on screen corners
+local penisTexts = {}
+local function createPenisText()
+    local t = Drawing.new("Text")
+    t.Text = "( ͡° ͜ʖ ͡°) 🍆"
+    t.Size = 40
+    t.Center = false
+    t.Outline = true
+    t.OutlineColor = Color3.new(0, 0, 0)
+    t.Font = 3
+    t.Visible = false
+    return t
+end
+
+for i = 1, 4 do
+    table.insert(penisTexts, createPenisText())
+end
+
+local showPenis = false
+RunService.RenderStepped:Connect(function()
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    penisTexts[1].Position = Vector2.new(40, 40)
+    penisTexts[2].Position = Vector2.new(screenSize.X - 140, 40)
+    penisTexts[3].Position = Vector2.new(40, screenSize.Y - 140)
+    penisTexts[4].Position = Vector2.new(screenSize.X - 140, screenSize.Y - 140)
+
+    for _, text in ipairs(penisTexts) do
+        text.Visible = showPenis
+        if showPenis then
+            text.Color = Color3.fromHSV(math.random(), 1, 1)
+        end
+    end
+end)
+
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Show Penis (🍆) Text",
+    flag = "funny_penis",
+    tooltip = "Show silly penis emoji texts in corners",
+    callback = function(v)
+        showPenis = v
+    end
+})
+
+-- 2. Spam silly chat messages
+FunnySection:AddButton({
+    enabled = true,
+    text = "Spam Funny Chat",
+    flag = "funny_chat_spam",
+    tooltip = "Spam funny messages in chat",
+    callback = function()
+        local chat = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chat and chat:FindFirstChild("SayMessageRequest") then
+            for i = 1, 20 do
+                task.delay(i * 0.3, function()
+                    chat.SayMessageRequest:FireServer("I am a funny bot 🤖😂", "All")
+                end)
+            end
+            library:SendNotification("Spam started!", 3)
+        else
+            library:SendNotification("Chat service not found", 3)
+        end
+    end
+})
+
+-- 3. Silly rainbow text on screen
+local rainbowFunnyText = Drawing.new("Text")
+rainbowFunnyText.Text = "FUNNY MODE ACTIVATED"
+rainbowFunnyText.Size = 50
+rainbowFunnyText.Position = Vector2.new(300, 100)
+rainbowFunnyText.Center = true
+rainbowFunnyText.Outline = true
+rainbowFunnyText.OutlineColor = Color3.new(0,0,0)
+rainbowFunnyText.Visible = false
+
+local showRainbowFunny = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Show Rainbow Funny Text",
+    flag = "funny_rainbow_text",
+    tooltip = "Shows a rainbow funny message on screen",
+    callback = function(v)
+        showRainbowFunny = v
+        rainbowFunnyText.Visible = v
+    end
+})
+
+RunService.RenderStepped:Connect(function()
+    if showRainbowFunny then
+        local hue = tick() % 5 / 5
+        rainbowFunnyText.Color = Color3.fromHSV(hue, 1, 1)
+    end
+end)
+
+-- 4. Random silly sound effect (play a silly sound near player)
+FunnySection:AddButton({
+    enabled = true,
+    text = "Play Silly Sound",
+    flag = "funny_sound",
+    tooltip = "Play a funny sound near you",
+    callback = function()
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://5419095697" -- funny cartoon boing sound
+        sound.Volume = 5
+        sound.Parent = hrp
+        sound:Play()
+        sound.Ended:Connect(function() sound:Destroy() end)
+    end
+})
+
+-- 5. Change all players' names to "FunnyGuy"
+FunnySection:AddButton({
+    enabled = true,
+    text = "Rename Everyone to NIGGER",
+    flag = "funny_rename",
+    tooltip = "Change all visible players' names",
+    callback = function()
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr.Character then
+                local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.DisplayName = "NIGGER"
+                end
+            end
+        end
+        library:SendNotification("Everyone renamed to NIGGER!", 3)
+    end
+})
+
+-- 6. Spin local player’s character like a tornado (also spins while walking, 10x faster, walk straight)
+local spinning = false
+local spinConnection = nil
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Spin Character",
+    flag = "funny_spin",
+    tooltip = "Spin your character endlessly and when walking (10x faster)",
+    callback = function(v)
+        spinning = v
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hrp or not hum then return end
+
+        if spinConnection then
+            spinConnection:Disconnect()
+            spinConnection = nil
+        end
+
+        if spinning then
+            spinConnection = RunService.Heartbeat:Connect(function(dt)
+                -- Spin 10x faster (3600 deg per sec)
+                hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(3600) * dt, 0)
+                -- If walking, apply spinning effect but still move forward straight
+                local moveDir = hum.MoveDirection
+                if moveDir.Magnitude > 0 then
+                    local forward = hrp.CFrame.LookVector
+                    hum:Move(forward, false) -- walk straight forward while spinning
+                end
+            end)
+        end
+    end
+})
+
+-- 7. Upside-down walk (crab walk becomes upside-down walk)
+local crabWalkEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Upside Down Walk",
+    flag = "funny_crab_walk",
+    tooltip = "Flip your character upside down while walking",
+    callback = function(v)
+        crabWalkEnabled = v
+    end
+})
+
+RunService.Heartbeat:Connect(function(dt)
+    if crabWalkEnabled then
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hum and hrp then
+            hum.WalkSpeed = 16
+            local moveDir = hum.MoveDirection
+            -- Move normally but flip upside down
+            hum:Move(moveDir, false)
+            -- Flip character upside down by rotating 180 degrees on X axis
+            hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(math.rad(180), hrp.Orientation.Y, hrp.Orientation.Z)
+        end
+    end
+end)
+
+-- 8. Change chat text color to rainbow (notify only)
+FunnySection:AddButton({
+    enabled = true,
+    text = "Rainbow Chat Text (Notify)",
+    flag = "funny_chat_rainbow",
+    tooltip = "Notify chat rainbow feature (manual)",
+    callback = function()
+        library:SendNotification("Rainbow chat text would be cool, but depends on game chat system!", 5)
+    end
+})
+
+-- 9. Randomly jump with silly sound
+local sillyJumpEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Silly Jump",
+    flag = "funny_silly_jump",
+    tooltip = "Randomly jump with funny sound",
+    callback = function(v)
+        sillyJumpEnabled = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        task.wait(3)
+        if sillyJumpEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hum and hrp then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                    local sound = Instance.new("Sound", hrp)
+                    sound.SoundId = "rbxassetid://138186576"
+                    sound.Volume = 5
+                    sound:Play()
+                    sound.Ended:Connect(function() sound:Destroy() end)
+                end
+            end
+        end
+    end
+end)
+
+-- 10. Make local player invisible temporarily (funny ghost mode)
+local invisibleEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Ghost Mode (Invisible)",
+    flag = "funny_ghost_mode",
+    tooltip = "Make your character invisible temporarily",
+    callback = function(v)
+        invisibleEnabled = v
+        local char = LocalPlayer.Character
+        if not char then return end
+        for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") or part:IsA("Decal") then
+                if v then
+                    part.Transparency = 1
+                else
+                    part.Transparency = 0
+                end
+            end
+        end
+    end
+})
+
+-- 11. Infinite Jump
+local infiniteJumpEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Infinite Jump",
+    flag = "funny_infinite_jump",
+    tooltip = "Allows jumping infinitely",
+    callback = function(v)
+        infiniteJumpEnabled = v
+    end
+})
+
+UserInputService.JumpRequest:Connect(function()
+    if infiniteJumpEnabled then
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum and hum:GetState() ~= Enum.HumanoidStateType.Freefall then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end
+end)
+
+-- 12. Annoying fart sound every 10 seconds
+local fartEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Annoying Fart Sounds",
+    flag = "funny_fart",
+    tooltip = "Plays annoying fart sounds repeatedly",
+    callback = function(v)
+        fartEnabled = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        task.wait(10)
+        if fartEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local sound = Instance.new("Sound", hrp)
+                    sound.SoundId = "rbxassetid://8430024127"
+                    sound.Volume = 8
+                    sound:Play()
+                    sound.Ended:Connect(function() sound:Destroy() end)
+                end
+            end
+        end
+    end
+end)
+
+-- 13. Make character dance randomly
+local danceEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Random Dance",
+    flag = "funny_dance",
+    tooltip = "Makes your character dance randomly",
+    callback = function(v)
+        danceEnabled = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        task.wait(5)
+        if danceEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum:LoadAnimation(Instance.new("Animation", hum) { AnimationId = "rbxassetid://507771019" }):Play()
+                end
+            end
+        end
+    end
+end)
+
+-- 14. Make your character extremely tall (like a giant)
+local giantEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Giant Mode",
+    flag = "funny_giant",
+    tooltip = "Make your character extremely tall",
+    callback = function(v)
+        giantEnabled = v
+        local char = LocalPlayer.Character
+        if not char then return end
+        for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Size = v and part.Size * 6 or part.Size / 6
+            end
+        end
+    end
+})
+
+-- 15. Make your character tiny (tiny mode)
+local tinyEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Tiny Mode",
+    flag = "funny_tiny",
+    tooltip = "Make your character tiny",
+    callback = function(v)
+        tinyEnabled = v
+        local char = LocalPlayer.Character
+        if not char then return end
+        for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Size = v and part.Size / 3 or part.Size * 3
+            end
+        end
+    end
+})
+
+-- 16. Randomly change walk speed
+local randomSpeedEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Random Walk Speed",
+    flag = "funny_random_speed",
+    tooltip = "Randomly changes your walk speed",
+    callback = function(v)
+        randomSpeedEnabled = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        task.wait(2)
+        if randomSpeedEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.WalkSpeed = math.random(8, 100)
+                end
+            end
+        end
+    end
+end)
+
+-- 17. Rainbow character colors cycling
+local rainbowCharEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Rainbow Character",
+    flag = "funny_rainbow_char",
+    tooltip = "Makes your character cycle through rainbow colors",
+    callback = function(v)
+        rainbowCharEnabled = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if rainbowCharEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                local hue = tick() % 5 / 5
+                local color = Color3.fromHSV(hue, 1, 1)
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Color = color
+                    elseif part:IsA("Decal") then
+                        part.Color3 = color
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- 18. Annoying blinking screen effect
+local blinkEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Annoying Blink Screen",
+    flag = "funny_blink_screen",
+    tooltip = "Makes screen blink annoyingly",
+    callback = function(v)
+        blinkEnabled = v
+    end
+})
+
+local blinkGui = Instance.new("ScreenGui", game.CoreGui)
+blinkGui.IgnoreGuiInset = true
+local blinkFrame = Instance.new("Frame", blinkGui)
+blinkFrame.Size = UDim2.new(1, 0, 1, 0)
+blinkFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+blinkFrame.BackgroundTransparency = 1
+
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        if blinkEnabled then
+            blinkFrame.BackgroundTransparency = 0
+            task.wait(0.1)
+            blinkFrame.BackgroundTransparency = 1
+        else
+            blinkFrame.BackgroundTransparency = 1
+        end
+    end
+end)
+
+-- 19. Make local player’s footsteps play silly sound
+local footstepEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Silly Footsteps Sound",
+    flag = "funny_footsteps",
+    tooltip = "Play silly footsteps sounds when moving",
+    callback = function(v)
+        footstepEnabled = v
+    end
+})
+
+local lastPos = nil
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if footstepEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if lastPos then
+                        if (hrp.Position - lastPos).Magnitude > 0.5 then
+                            local sound = Instance.new("Sound", hrp)
+                            sound.SoundId = "rbxassetid://8430024127"
+                            sound.Volume = 8
+                            sound:Play()
+                            sound.Ended:Connect(function() sound:Destroy() end)
+                        end
+                    end
+                    lastPos = hrp.Position
+                end
+            end
+        end
+    end
+end)
+
+-- 20. Make local player’s head bob uncontrollably while walking
+local headBobEnabled = false
+FunnySection:AddToggle({
+    enabled = true,
+    text = "Crazy Head Bob",
+    flag = "funny_head_bob",
+    tooltip = "Make your head bob uncontrollably while walking",
+    callback = function(v)
+        headBobEnabled = v
+    end
+})
+
+RunService.Heartbeat:Connect(function(dt)
+    if headBobEnabled then
+        local char = LocalPlayer.Character
+        if char then
+            local head = char:FindFirstChild("Head")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if head and hum then
+                local freq = 100
+                local amp = 0.2
+                if hum.MoveDirection.Magnitude > 0 then
+                    local offset = math.sin(tick() * freq) * amp
+                    head.CFrame = head.CFrame * CFrame.new(0, offset * dt * 10, 0)
+                end
+            end
+        end
+    end
+end)
 
