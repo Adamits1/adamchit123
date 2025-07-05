@@ -1,5 +1,3 @@
--- Adam Chit 123 UI Script
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -20,50 +18,39 @@ local Window = library.NewWindow({
 local Tab1 = Window:AddTab("  Main  ")
 local Tab2 = Window:AddTab("  Movement  ")
 local Tab3 = Window:AddTab("  Utility  ")
-
 local SettingsTab = library:CreateSettingsTab(Window)
 
 local CombatSection = Tab1:AddSection("Combat Hacks", 1)
 local MovementSection = Tab2:AddSection("Movement Hacks", 1)
 local UtilitySection = Tab3:AddSection("Utility Hacks", 1)
 
--- Adam Poo: Shows rainbow 123 on screen
+-- Rainbow "123" texts setup
 local showRainbow123 = false
-CombatSection:AddToggle({
-    text = "Adam Poo",
-    state = false,
-    callback = function(v)
-        showRainbow123 = v
-    end
-})
+local Drawing = Drawing
 
--- Helper to create enhanced text with stronger outline
+local cornerTexts = {}
 local function createText()
-    local text = Drawing.new("Text")
-    text.Text = "Adam Poo"
-    text.Size = 80 -- Bigger size
-    text.Center = false
-    text.Outline = true
-    text.OutlineColor = Color3.new(0, 0, 0) -- Optional: make outline more visible
-    text.Font = 3 -- 1=UI, 2=System, 3=Plex (bold/modern)
-    text.Visible = false
-    return text
+    local t = Drawing.new("Text")
+    t.Text = "Adam Poo"
+    t.Size = 80
+    t.Center = false
+    t.Outline = true
+    t.OutlineColor = Color3.new(0, 0, 0)
+    t.Font = 3
+    t.Visible = false
+    return t
 end
 
--- Create 4 text objects for each corner
-local cornerTexts = {}
-for _ = 1, 4 do
+for i = 1, 4 do
     table.insert(cornerTexts, createText())
 end
 
 RunService.RenderStepped:Connect(function()
-    local screenSize = Workspace.CurrentCamera.ViewportSize
-
-    -- Set corner positions (adjusted for bigger text)
-    cornerTexts[1].Position = Vector2.new(20, 20) -- Top Left
-    cornerTexts[2].Position = Vector2.new(screenSize.X - 320, 20) -- Top Right
-    cornerTexts[3].Position = Vector2.new(20, screenSize.Y - 100) -- Bottom Left
-    cornerTexts[4].Position = Vector2.new(screenSize.X - 320, screenSize.Y - 100) -- Bottom Right
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    cornerTexts[1].Position = Vector2.new(20, 20)
+    cornerTexts[2].Position = Vector2.new(screenSize.X - 120, 20)
+    cornerTexts[3].Position = Vector2.new(20, screenSize.Y - 100)
+    cornerTexts[4].Position = Vector2.new(screenSize.X - 120, screenSize.Y - 100)
 
     if showRainbow123 then
         local hue = tick() % 5 / 5
@@ -79,9 +66,22 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Hack the server (visual effect)
+CombatSection:AddToggle({
+    enabled = true,
+    text = "Adam Poo",
+    flag = "adam_poo",
+    tooltip = "Show rainbow 123 in screen corners",
+    callback = function(v)
+        showRainbow123 = v
+    end
+})
+
 CombatSection:AddButton({
+    enabled = true,
     text = "Hack the Server",
+    flag = "hack_server_btn",
+    tooltip = "Spam colored dots",
+    confirm = false,
     callback = function()
         library:SendNotification("Hacking server...", 2)
         for i = 1, 50 do
@@ -98,29 +98,32 @@ CombatSection:AddButton({
     end
 })
 
--- Anti Ragdoll
+-- No Ragdoll toggle
 local noRagdollEnabled = false
 UtilitySection:AddToggle({
+    enabled = true,
     text = "No Ragdoll",
-    state = false,
+    flag = "no_ragdoll",
+    tooltip = "Prevents ragdoll effects",
     callback = function(v)
         noRagdollEnabled = v
     end
 })
 
 RunService.Heartbeat:Connect(function()
-    if noRagdollEnabled and LocalPlayer.Character then
+    if noRagdollEnabled then
         local char = LocalPlayer.Character
+        if not char then return end
         local hum = char:FindFirstChildOfClass("Humanoid")
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if hum and root then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hum and hrp then
             hum.PlatformStand = false
             if hum:GetState() == Enum.HumanoidStateType.Physics then
                 hum:ChangeState(Enum.HumanoidStateType.Running)
             end
-            root.Velocity = Vector3.zero
-            root.RotVelocity = Vector3.zero
-            for _, v in ipairs(root:GetChildren()) do
+            hrp.Velocity = Vector3.zero
+            hrp.RotVelocity = Vector3.zero
+            for _, v in pairs(hrp:GetChildren()) do
                 if v:IsA("BodyVelocity") or v:IsA("BodyAngularVelocity") then
                     v:Destroy()
                 end
@@ -129,113 +132,286 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Godmode (Evade)
+-- Godmode (Evade) toggle
 local godmodeEnabled = false
+local godmodeCooldown = false
+
 UtilitySection:AddToggle({
+    enabled = true,
     text = "Godmode (Evade)",
-    state = false,
+    flag = "godmode_evade",
+    tooltip = "Teleport away if enemy is close",
     callback = function(v)
         godmodeEnabled = v
     end
 })
 
 RunService.Heartbeat:Connect(function()
-    if not godmodeEnabled then return end
-    local char = LocalPlayer.Character
-    if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local dist = (root.Position - player.Character.HumanoidRootPart.Position).Magnitude
-            if dist < 15 then
-                local escapeDirection = (root.Position - player.Character.HumanoidRootPart.Position).Unit
-                root.CFrame = root.CFrame + escapeDirection * 20
-                library:SendNotification("Enemy too close. Evading...", 2)
-                break
+    if godmodeEnabled and not godmodeCooldown then
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                local targetHrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if targetHrp then
+                    local dist = (hrp.Position - targetHrp.Position).Magnitude
+                    if dist < 30 then
+                        local direction = (hrp.Position - targetHrp.Position).Unit
+                        hrp.CFrame = hrp.CFrame + direction * 40
+                        library:SendNotification("Enemy too close! Evading...", 2)
+                        godmodeCooldown = true
+                        task.delay(2, function() godmodeCooldown = false end)
+                        break
+                    end
+                end
             end
         end
     end
 end)
 
--- Fly
+-- Fly Variables & Functions
 local flying = false
 local flySpeed = 50
+local flyMethod = "BodyVelocity"
+local connectionFly
 local bodyGyro, bodyVelocity
 
-MovementSection:AddToggle({
-    text = "Fly",
-    state = false,
-    callback = function(state)
-        flying = state
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not hrp or not hum then return end
-
-        if flying then
-            bodyGyro = Instance.new("BodyGyro", hrp)
-            bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-            bodyGyro.P = 9e4
-            bodyVelocity = Instance.new("BodyVelocity", hrp)
-            bodyVelocity.Velocity = Vector3.zero
-            bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-
-            coroutine.wrap(function()
-                while flying and char and hrp and hum and hum.Health > 0 do
-                    local cf = workspace.CurrentCamera.CFrame
-                    local moveVec = Vector3.zero
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec += cf.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec -= cf.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec -= cf.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec += cf.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVec += Vector3.new(0, 1, 0) end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVec -= Vector3.new(0, 1, 0) end
-                    bodyVelocity.Velocity = moveVec.Unit * flySpeed
-                    bodyGyro.CFrame = cf
-                    task.wait()
-                end
-            end)()
-        else
-            if bodyGyro then bodyGyro:Destroy() end
-            if bodyVelocity then bodyVelocity:Destroy() end
-        end
+local function cleanupFly()
+    if connectionFly then
+        connectionFly:Disconnect()
+        connectionFly = nil
     end
-})
+    if bodyGyro then
+        bodyGyro:Destroy()
+        bodyGyro = nil
+    end
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+end
 
--- Freecam
-local freecamEnabled = false
-local freecamCamera
-MovementSection:AddToggle({
-    text = "Freecam",
-    state = false,
+local function flyBodyVelocity(char, hrp, hum)
+    bodyGyro = Instance.new("BodyGyro", hrp)
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.P = 9e4
+    bodyVelocity = Instance.new("BodyVelocity", hrp)
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+
+    connectionFly = RunService.Heartbeat:Connect(function()
+        if not flying then return end
+        local camCF = workspace.CurrentCamera.CFrame
+        local moveVec = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec += camCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec -= camCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec -= camCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec += camCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVec += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVec -= Vector3.new(0,1,0) end
+
+        if moveVec.Magnitude > 0 then
+            moveVec = moveVec.Unit * flySpeed
+        end
+        bodyVelocity.Velocity = moveVec
+        bodyGyro.CFrame = camCF
+    end)
+end
+
+local function flyCFrame(char, hrp, hum)
+    connectionFly = RunService.Heartbeat:Connect(function(dt)
+        if not flying then return end
+        local camCF = workspace.CurrentCamera.CFrame
+        local moveVec = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec += camCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec -= camCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec -= camCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec += camCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVec += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVec -= Vector3.new(0,1,0) end
+
+        if moveVec.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + moveVec.Unit * flySpeed * RunService.Heartbeat:Wait()
+        end
+    end)
+end
+
+local flyMethods = {
+    BodyVelocity = flyBodyVelocity,
+    CFrame = flyCFrame,
+}
+
+MovementSection:AddList({
+    enabled = true,
+    text = "Fly Method",
+    flag = "fly_method",
+    tooltip = "Select the fly method",
+    values = {"BodyVelocity", "CFrame"},
+    selected = "BodyVelocity",
     callback = function(v)
-        freecamEnabled = v
-        if v then
-            freecamCamera = Instance.new("Camera")
-            freecamCamera.CameraType = Enum.CameraType.Scriptable
-            workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
-            freecamCamera.CFrame = workspace.CurrentCamera.CFrame
-            workspace.CurrentCamera.CameraSubject = nil
-
-            local speed = 0.5
-            RunService.RenderStepped:Connect(function()
-                if not freecamEnabled then return end
-                local input = Vector3.zero
-                local cam = freecamCamera
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then input += cam.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then input -= cam.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then input -= cam.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then input += cam.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then input += Vector3.new(0, 1, 0) end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then input -= Vector3.new(0, 1, 0) end
-                cam.CFrame = cam.CFrame + input.Unit * speed
-                workspace.CurrentCamera.CFrame = cam.CFrame
-            end)
-        else
-            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+        flyMethod = v
+        if flying then
+            cleanupFly()
+            local char = LocalPlayer.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hrp and hum then
+                    flyMethods[flyMethod](char, hrp, hum)
+                end
+            end
         end
     end
 })
+
+MovementSection:AddSlider({
+    enabled = true,
+    text = "Fly Speed",
+    flag = "fly_speed",
+    tooltip = "Adjust fly speed",
+    min = 10,
+    max = 200,
+    increment = 1,
+    value = flySpeed,
+    callback = function(v)
+        flySpeed = v
+    end
+})
+
+MovementSection:AddToggle({
+    enabled = true,
+    text = "Fly",
+    flag = "fly_toggle",
+    tooltip = "Toggle flying",
+    callback = function(v)
+        flying = v
+        cleanupFly()
+        if flying then
+            local char = LocalPlayer.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hrp and hum then
+                    flyMethods[flyMethod](char, hrp, hum)
+                end
+            end
+        end
+    end
+})
+
+-- Freecam with normal rotation
+
+local freecamEnabled = false
+local freecamSpeed = 50
+local freecamPos = nil
+local freecamConnection = nil
+
+local function enableFreecam()
+    local cam = workspace.CurrentCamera
+    freecamPos = cam.CFrame.Position
+    freecamEnabled = true
+
+    -- Let Roblox handle mouse rotation normally (don't lock mouse)
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    UserInputService.MouseIconEnabled = true
+
+    freecamConnection = RunService.RenderStepped:Connect(function(dt)
+        if not freecamEnabled then return end
+        local camCF = cam.CFrame
+        local moveDir = Vector3.zero
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += camCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= camCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= camCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += camCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
+
+        if moveDir.Magnitude > 0 then
+            freecamPos = freecamPos + moveDir.Unit * freecamSpeed * dt
+        end
+
+        -- Only update position, keep camera rotation the same so mouse controls rotation
+        cam.CFrame = CFrame.new(freecamPos) * CFrame.Angles(camCF:ToEulerAnglesYXZ())
+    end)
+end
+
+local function disableFreecam()
+    if freecamConnection then
+        freecamConnection:Disconnect()
+        freecamConnection = nil
+    end
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    UserInputService.MouseIconEnabled = true
+    freecamEnabled = false
+end
+
+MovementSection:AddToggle({
+    enabled = true,
+    text = "Freecam",
+    flag = "freecam_toggle",
+    tooltip = "Toggle freecam",
+    callback = function(v)
+        if v then
+            enableFreecam()
+        else
+            disableFreecam()
+        end
+    end
+})
+
+MovementSection:AddSlider({
+    enabled = true,
+    text = "Freecam Speed",
+    flag = "freecam_speed",
+    tooltip = "Adjust freecam speed",
+    min = 10,
+    max = 200,
+    increment = 1,
+    value = freecamSpeed,
+    callback = function(v)
+        freecamSpeed = v
+    end
+})
+
+-- Speed Boost
+local speedBoostEnabled = false
+local originalWalkSpeed = 16
+
+local function applySpeedBoost()
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if speedBoostEnabled then
+                originalWalkSpeed = hum.WalkSpeed
+                hum.WalkSpeed = 50
+            else
+                hum.WalkSpeed = originalWalkSpeed
+            end
+        end
+    end
+end
+
+MovementSection:AddToggle({
+    enabled = true,
+    text = "Speed Boost",
+    flag = "speed_boost",
+    tooltip = "Boost walk speed to 50",
+    callback = function(v)
+        speedBoostEnabled = v
+        applySpeedBoost()
+    end
+})
+
+-- Apply speed boost on character spawn
+Players.LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(1) -- wait for Humanoid to load
+    applySpeedBoost()
+end)
+
+-- Also in case the character already loaded
+task.delay(1, applySpeedBoost)
+
