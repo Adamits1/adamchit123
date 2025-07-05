@@ -18,11 +18,14 @@ local Window = library.NewWindow({
 local Tab1 = Window:AddTab("  Main  ")
 local Tab2 = Window:AddTab("  Movement  ")
 local Tab3 = Window:AddTab("  Utility  ")
+local Tab4 = Window:AddTab("  Visuals  ")
 local SettingsTab = library:CreateSettingsTab(Window)
 
-local CombatSection = Tab1:AddSection("Combat Hacks", 1)
-local MovementSection = Tab2:AddSection("Movement Hacks", 1)
-local UtilitySection = Tab3:AddSection("Utility Hacks", 1)
+local CombatSection = Tab1:AddSection("Main", 1)
+local MovementSection = Tab2:AddSection("Movement", 1)
+local UtilitySection = Tab3:AddSection("Utility", 1)
+local VisualsSection = Tab4:AddSection("Visuals", 1)
+
 
 -- Rainbow "123" texts setup
 local showRainbow123 = false
@@ -162,7 +165,7 @@ RunService.Heartbeat:Connect(function()
                         hrp.CFrame = hrp.CFrame + direction * 40
                         library:SendNotification("Enemy too close! Evading...", 2)
                         godmodeCooldown = true
-                        task.delay(2, function() godmodeCooldown = false end)
+                        task.delay(0.01, function() godmodeCooldown = false end)
                         break
                     end
                 end
@@ -439,5 +442,179 @@ if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humano
     originalWalkSpeed = nil
     applySpeedBoost()
 end
+
+--// Infinite Jump
+local infiniteJump = false
+UserInputService.JumpRequest:Connect(function()
+    if infiniteJump then
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChildOfClass("Humanoid") then
+            char:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+        end
+    end
+end)
+
+UtilitySection:AddToggle({
+    enabled = false,
+    text = "Infinite Jump",
+    flag = "inf_jump",
+    tooltip = "Jump infinitely",
+    callback = function(v)
+        infiniteJump = v
+    end
+})
+
+--// Anti Stun Fix (basic version, may need tuning per-game)
+local antiStunEnabled = false
+
+UtilitySection:AddToggle({
+    enabled = false,
+    text = "Anti Stun",
+    flag = "anti_stun",
+    tooltip = "Removes stun effects (like from knockdowns)",
+    callback = function(v)
+        antiStunEnabled = v
+    end
+})
+
+RunService.Heartbeat:Connect(function()
+    if antiStunEnabled then
+        local char = LocalPlayer.Character
+        if char then
+            for _, v in pairs(char:GetDescendants()) do
+                if v:IsA("BoolValue") and v.Name:lower():find("stun") then
+                    v:Destroy()
+                elseif v:IsA("NumberValue") and v.Name:lower():find("stun") then
+                    v.Value = 0
+                end
+            end
+        end
+    end
+end)
+
+--// Instant Interact
+CombatSection:AddButton({
+    enabled = true,
+    text = "Instant Interact",
+    flag = "instant_interact",
+    tooltip = "Interact with hold prompts instantly",
+    callback = function()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                if obj.MaxActivationDistance > 0 then
+                    obj.HoldDuration = 0
+                end
+            end
+        end
+        library:SendNotification("Set all prompts to 0s hold", 3)
+    end
+})
+
+--// UI Button Openers
+local function safeOpen(guiName)
+    local gui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(guiName)
+    if gui then gui.Enabled = true end
+end
+
+UtilitySection:AddButton({
+    text = "Open CoinsShop",
+    callback = function() safeOpen("CoinsShop") end
+})
+
+UtilitySection:AddButton({
+    text = "Open Shop",
+    callback = function() safeOpen("Shop") end
+})
+
+UtilitySection:AddButton({
+    text = "Open RainbowSpinWheel",
+    callback = function() safeOpen("RainbowSpinWheel") end
+})
+
+--// Set TopNotification text
+task.spawn(function()
+    local gui = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("TopNotification", 5)
+    if gui and gui:FindFirstChildOfClass("TextLabel") then
+        gui:FindFirstChildOfClass("TextLabel").Text = "adams on top kaka klavs"
+    end
+end)
+
+--// Simple Box ESP and Name ESP
+local espEnabled = false
+local nameEspEnabled = false
+local boxColor = Color3.fromRGB(255, 0, 0)
+local nameColor = Color3.fromRGB(0, 255, 0)
+local espObjects = {}
+
+local function clearEsp()
+    for _, v in pairs(espObjects) do
+        if v and v.Remove then v:Remove() end
+    end
+    espObjects = {}
+end
+
+RunService.RenderStepped:Connect(function()
+    if not (espEnabled or nameEspEnabled) then
+        clearEsp()
+        return
+    end
+
+    clearEsp()
+
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = plr.Character.HumanoidRootPart
+            local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(hrp.Position)
+
+            if onScreen then
+                if boxColor and espEnabled then
+                    local box = Drawing.new("Square")
+                    box.Size = Vector2.new(50, 100)
+                    box.Position = Vector2.new(screenPos.X - 25, screenPos.Y - 50)
+                    box.Color = boxColor
+                    box.Thickness = 2
+                    box.Visible = true
+                    table.insert(espObjects, box)
+                end
+
+                if nameColor and nameEspEnabled then
+                    local nameText = Drawing.new("Text")
+                    nameText.Text = plr.Name
+                    nameText.Position = Vector2.new(screenPos.X - (#plr.Name * 3), screenPos.Y - 60)
+                    nameText.Color = nameColor
+                    nameText.Size = 16
+                    nameText.Center = false
+                    nameText.Outline = true
+                    nameText.Visible = true
+                    table.insert(espObjects, nameText)
+                end
+            end
+        end
+    end
+end)
+
+VisualsSection:AddToggle({
+    text = "Box ESP",
+    flag = "esp_box",
+    tooltip = "Enable Box ESP",
+    callback = function(v) espEnabled = v end
+}):AddColor({
+    text = "ESP Box Color",
+    color = boxColor,
+    flag = "esp_box_color",
+    callback = function(v) boxColor = v end
+})
+
+VisualsSection:AddToggle({
+    text = "Name ESP",
+    flag = "esp_name",
+    tooltip = "Enable Name ESP",
+    callback = function(v) nameEspEnabled = v end
+}):AddColor({
+    text = "ESP Name Color",
+    color = nameColor,
+    flag = "esp_name_color",
+    callback = function(v) nameColor = v end
+})
 
 
