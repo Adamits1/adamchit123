@@ -19,7 +19,7 @@ frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
--- Rounded edges
+-- Rounded corners
 local frameCorner = Instance.new("UICorner")
 frameCorner.CornerRadius = UDim.new(0, 12)
 frameCorner.Parent = frame
@@ -34,7 +34,7 @@ title.TextSize = 24
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Parent = frame
 
--- Credit label
+-- Credit
 local credit = Instance.new("TextLabel")
 credit.Size = UDim2.new(1, 0, 0, 20)
 credit.Position = UDim2.new(0, 0, 1, -25)
@@ -45,7 +45,7 @@ credit.TextSize = 14
 credit.TextColor3 = Color3.fromRGB(160, 160, 160)
 credit.Parent = frame
 
--- UI layout
+-- Layout
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 12)
 layout.FillDirection = Enum.FillDirection.Vertical
@@ -111,10 +111,16 @@ local inkGameBtn = createButton("Ink Game", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Adamits1/adamchit123/main/inkgame.lua"))()
 end)
 
+local universalBtn = createButton("Universal", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Adamits1/adamchit123/main/universal.lua"))()
+end)
+
+-- Parent the buttons to frame
 brainrotBtn.Parent = frame
 inkGameBtn.Parent = frame
+universalBtn.Parent = frame
 
--- Opening animation
+-- Open animation
 TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 350, 0, 250),
     BackgroundTransparency = 0
