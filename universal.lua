@@ -5,14 +5,14 @@ local LocalPlayer = Players.LocalPlayer
 
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/drillygzzly/Roblox-UI-Libs/main/1%20Tokyo%20Lib%20(FIXED)/Tokyo%20Lib%20Source.lua"))({
     cheatname = "Adam Chit 123",
-    gamename = "Steal a Brainrot"
+    gamename = "Universal"
 })
 
 library:init()
 
 local Window = library.NewWindow({
-    title = "Adam Chit 123 | Steal a Brainrot",
-    size = UDim2.new(0, 510, 0.6, 6)
+    title = "Adam Chit 123 | Universal",
+    size = UDim2.new(0, 700, 0.6, 6)
 })
 
 local Tab1 = Window:AddTab("  Main  ")
@@ -838,5 +838,188 @@ RunService.RenderStepped:Connect(function()
 end)
 
 
-local Time = string.format("%." .. tostring(Decimals) .. "f", os.clock() - Clock)
-library:SendNotification("Adamchit123 Loaded in " .. Time .. "s", 6)
+-- click to tp
+local ClickToTP_Enabled = false
+
+MovementSection:AddToggle({
+    text = "Click to TP",
+    state = false,
+    flag = "ClickTP_Toggle",
+    tooltip = "Teleports you to where you click in the world",
+    callback = function(v)
+        ClickToTP_Enabled = v
+    end
+})
+
+-- Handle mouse click teleporting
+local Mouse = LocalPlayer:GetMouse()
+
+Mouse.Button1Down:Connect(function()
+    if not ClickToTP_Enabled then return end
+
+    local target = Mouse.Hit
+    if target and target.Position then
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            -- Optional Y-offset to avoid falling through ground
+            char:MoveTo(Vector3.new(target.Position.X, target.Position.Y + 3, target.Position.Z))
+        end
+    end
+end)
+
+
+
+-- Add Combat Tab
+local CombatTab = Window:AddTab("  Combat  ")
+local CombatSection = CombatTab:AddSection("Aimbot", 1)
+
+-- Services
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local UIS = game:GetService("UserInputService")
+
+-- Aimbot State
+local AimbotActive = false
+local AimbotHoldMode = false
+local AimbotKey = Enum.KeyCode.Q
+local Smoothness = 0
+local TrackingPart = "Head"
+local AimMode = "Camera" -- or "Mouse"
+local HoldingKey = false
+
+-- Input for Hold-to-Aim
+UIS.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == AimbotKey and AimbotHoldMode then
+        HoldingKey = true
+    end
+end)
+
+UIS.InputEnded:Connect(function(input, processed)
+    if not processed and input.KeyCode == AimbotKey and AimbotHoldMode then
+        HoldingKey = false
+    end
+end)
+
+-- Get closest player to screen center
+local function getClosestTarget()
+    local closest, closestDist = nil, math.huge
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local part = player.Character:FindFirstChild(TrackingPart)
+            if part then
+                local screenPos, visible = Camera:WorldToViewportPoint(part.Position)
+                if visible then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closest = part
+                    end
+                end
+            end
+        end
+    end
+
+    return closest
+end
+
+-- Mouse Aim Function
+local function aimMouseAt(position)
+    local screenPos = Camera:WorldToViewportPoint(position)
+    local mouseLocation = UIS:GetMouseLocation()
+    local delta = Vector2.new(screenPos.X, screenPos.Y) - mouseLocation
+    mousemoverel(delta.X, delta.Y)
+end
+
+-- Aimbot Loop
+RunService.RenderStepped:Connect(function()
+    local shouldAim = AimbotHoldMode and HoldingKey or AimbotActive
+
+    if shouldAim then
+        local targetPart = getClosestTarget()
+        if targetPart then
+            local origin = Camera.CFrame.Position
+            local direction = (targetPart.Position - origin).Unit
+
+            if AimMode == "Camera" then
+                local newDir = Camera.CFrame.LookVector:Lerp(direction, 1 - math.clamp(Smoothness, 0, 1))
+                Camera.CFrame = CFrame.new(origin, origin + newDir)
+            elseif AimMode == "Mouse" then
+                aimMouseAt(targetPart.Position)
+            end
+        end
+    end
+end)
+
+-- UI Controls
+CombatSection:AddToggle({
+    text = "Aimbot",
+    state = false,
+    flag = "Aimbot_Toggle",
+    tooltip = "Enable or disable aimbot",
+    callback = function(v)
+        AimbotActive = v
+    end
+}):AddBind({
+    text = "Aimbot Keybind",
+    mode = "toggle",
+    bind = "Q",
+    flag = "Aimbot_Bind",
+    callback = function()
+        if not AimbotHoldMode then
+            AimbotActive = not AimbotActive
+        end
+    end,
+    keycallback = function(key)
+        AimbotKey = key
+    end
+})
+
+CombatSection:AddToggle({
+    text = "Hold-to-Aim",
+    state = false,
+    flag = "Aimbot_HoldMode",
+    tooltip = "Hold key instead of toggling",
+    callback = function(v)
+        AimbotHoldMode = v
+        if AimbotHoldMode then AimbotActive = false end
+    end
+})
+
+CombatSection:AddSlider({
+    text = "Aimbot Smoothness",
+    flag = "Aimbot_Smoothness",
+    tooltip = "0 = snap, 1 = smooth",
+    min = 0,
+    max = 1,
+    increment = 0.01,
+    value = 0,
+    callback = function(v)
+        Smoothness = v
+    end
+})
+
+CombatSection:AddList({
+    text = "Tracking Bone",
+    values = {"Head", "Neck", "UpperTorso"},
+    selected = "Head",
+    flag = "Aimbot_Part",
+    tooltip = "Where to aim on the enemy",
+    callback = function(v)
+        TrackingPart = v
+    end
+})
+
+CombatSection:AddList({
+    text = "Aim Mode",
+    values = {"Camera", "Mouse"},
+    selected = "Camera",
+    flag = "Aimbot_Mode",
+    tooltip = "Camera lock or mouse movement",
+    callback = function(v)
+        AimMode = v
+    end
+})
